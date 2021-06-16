@@ -334,6 +334,30 @@ form:invalid button[class=button]:active::after {
     z-index: 1000;
 }
 
+.startButton{
+    display: block;
+    position: absolute;
+    padding: 0 16px;
+    height: 36px;
+    color: white;
+    font-size: 18px;
+    text-transform: uppercase;
+    background-color: #f5d100;
+    border: none;
+    margin-top: 0;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 4px;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-family: "Mortal Kombat 3";
+    outline: none;
+    left: 50%;
+    transform: translatex(-50%);
+    top: 50%;
+    z-index: 1000000;
+}
+
 .inputWrap {
     position: relative;
     width: 280px;
