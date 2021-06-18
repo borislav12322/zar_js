@@ -1,46 +1,29 @@
 'use strict'
 
-import {player1, player2} from './players.js';
-import {generateLogs, createElement, playerAttack, enemyAttack, showResult} from './utils.js';
+import {player1, player2, createPlayer} from './players.js';
 import {$formFight, $arenas} from './utils.js';
+import {Game, generateLogs} from './game.js';
 
-function createPlayer(player) {
-    const $player = createElement('div', 'player' + player.player_number);
-    
-    const $progressBar = createElement('div', 'progressbar')
+const game = new Game();
 
-    const $character = createElement('div', 'character')
+game.start().addEventListener('click', function(){
+    $formFight.style.display = 'flex';
+    $startButton.style.display = 'none';
+})
 
-    $player.appendChild($progressBar);
-    $player.appendChild($character);
-
-    const $life = createElement('div', 'life');
-
-    const $name = createElement('div', 'name');
-
-    $progressBar.appendChild($life);
-    $progressBar.appendChild($name);
-
-    const $img = createElement('img');
-
-    $character.appendChild($img);
-
-    $life.style.width = player.hp + '%';
-    $life.innerText = player.hp;
-    $name.innerText = player.hero_name;
-    $img.src = player.img;
-
-    return $player;
-};
+const $startButton = document.querySelector('.startButton');
 
 $arenas.appendChild(createPlayer(player1));
 $arenas.appendChild(createPlayer(player2));
+
+
+
 generateLogs('start', player1, player2);
 
 $formFight.addEventListener('submit', function(e){
     e.preventDefault();
-    const enemy =  enemyAttack();
-    const player = playerAttack();
+    const enemy =  game.enemyAttack();
+    const player = game.playerAttack();
 
     if(enemy.defence !== player.hit){
         player2.changeHP(player.value);
@@ -57,6 +40,6 @@ $formFight.addEventListener('submit', function(e){
     }else{
         generateLogs('defence', player2, player1, enemy.value = 0);
     };
-
-    showResult();
+    
+    game.showResult();
 });
