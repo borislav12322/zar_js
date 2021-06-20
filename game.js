@@ -1,6 +1,6 @@
 'use strict'
-import { createElement, getTime, $chat, $fightButton, $arenas, $formFight, getRandom} from "./utils.js";
-import { player1, player2, Player } from "./players.js";
+import { createElement, getTime, getRandom} from "./utils.js";
+import {createPlayer, Player } from "./players.js";
 
 const ATTACK = ['head', 'body', 'foot'];
 
@@ -9,6 +9,9 @@ const HIT = {
     body: 25,
     foot: 20,
 };
+
+let player1;
+let player2;
 
 export const logs = {
     start: 'Часы показывали [time], когда [player1] и [player2] бросили вызов друг другу.',
@@ -54,37 +57,161 @@ export class Game{
 
     constructor(props){};
 
-    start = () => {
-        const $startButton = createElement('button', 'startButton');
-        const $arenas = document.querySelector('.arenas');
-        $startButton.innerText = 'Start';
-        $arenas.appendChild($startButton);
-        return $startButton;
+    static $chat = document.querySelector('.chat');
+    static $fightButton = document.querySelector('.button');
+    static $formFight = document.querySelector('.control');
+    static $arenas = document.querySelector('.arenas');
+
+    getPlayers = async () => {
+        const body = fetch('https://reactmarathon-api.herokuapp.com/api/mk/players').then(res => res.json());
+        return body;
     };
 
-    showResult = () => {
+    static fight = async () => {
+        let {hit, defence} = Game.playerAttack();
+        const fight = await fetch('http://reactmarathon-api.herokuapp.com/api/mk/player/fight', {
+            method: 'POST',
+            body: JSON.stringify({
+                hit,
+                defence,
+            })
+        }).then(res => res.json());
+
+        return fight;
+    };
+
+    getRandomEnemy = async () => {
+        const body = fetch('https://reactmarathon-api.herokuapp.com/api/mk/player/choose').then(response => response.json());
+
+        return body;
+    };
+
+    initGame = async () =>{
+        const player = JSON.parse(localStorage.getItem('player1'));
+        const enemy = await this.getRandomEnemy();
+        const p1 = player;
+        const p2 = enemy;
+        player1 = new Player({
+            ...p1,
+            number: 1,
+            rootSelector: 'arenas',
+        });
+
+        player2 = new Player({
+            ...p2,
+            number: 2,
+            rootSelector: 'arenas',
+        });
+
+        
+        Game.$formFight.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const attack = await Game.fight();
+            const enemy =  attack.player2;
+            console.log(enemy);
+            const player =  attack.player1;
+            console.log(player);
+        
+            if(enemy.defence !== player.hit){
+                player2.changeHP(player.value);
+                player2.renderHP();
+                Game.generateLogs('hit', player1, player2, player.value);
+            }else{
+                Game.generateLogs('defence', player1, player2, player.value = 0);
+            };
+        
+            if(player.defence !== enemy.hit){
+                player1.changeHP(enemy.value);
+                player1.renderHP();
+                Game.generateLogs('hit', player2, player1, enemy.value);
+            }else{
+                Game.generateLogs('defence', player2, player1, enemy.value = 0);
+            };
+            
+            Game.showResult();
+        });
+        
+
+        createPlayer(player1);
+        createPlayer(player2);
+        Game.generateLogs('start', player1, player2);
+    };
+
+    static generateLogs = (type, player1, player2, playerValue) => {
+        const time = getTime();
+        let text;   
+        let el;
+        const damage = playerValue;
+    
+        switch(type){
+            case 'start': 
+                text = logs[type].replace('[time]', time).replace('[player1]', player1.name).replace('[player2]', player2.name);    
+                el = `<p>${text}</p>`;
+                break;
+            case 'end':
+                text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerWins]', player1.name).replace('[playerLose]', player2.name);    
+                el = `<p>${time} ${text}</p>`;
+                break;
+            case 'hit':
+                text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerDefence]', player2.name).replace('[playerKick]', player1.name);    
+                el = `<p>${time} ${text} ${damage} ${player2.hp}/100 </p>`;
+                break;
+            case 'defence':
+                text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerKick]', player1.name).replace('[playerDefence]', player2.name);    
+                el = `<p>${time} ${text} ${damage} ${player2.hp}/100</p>`;
+                break;
+            case 'draw':
+                text = logs[type];    
+                el = `<p>${time} ${text}</p>`;
+                break;
+            default:
+                text = 'Error';
+                el = `<p>${text}</p>`;
+        };
+        Game.$chat.insertAdjacentHTML('afterbegin', el);
+    };
+    
+    static createReloadButton = () => {
+        const $reloadWrap = createElement('div', 'reloadWrap')
+        const $buttonReload = createElement('button', 'button');
+        $buttonReload.innerText = 'Restart';
+        $reloadWrap.appendChild($buttonReload);
+        $buttonReload.addEventListener('click', function(){
+            window.location.pathname = 'index.html';
+        });
+    
+        return $reloadWrap;
+    };
+
+    static playerWin = (name) => {
+        const $winTitle = createElement('div', 'loseTitle');
+        (name) ? $winTitle.innerText = name + ' Wins' : $winTitle.innerText = 'Draw';
+        return $winTitle;
+    };
+
+    static showResult = () => {
         if (player1.hp === 0 || player2.hp === 0){
-            $fightButton.disabled = true;
-            $arenas.appendChild(createReloadButton());
+            Game.$fightButton.disabled = true;
+            Game.$arenas.appendChild(Game.createReloadButton());
         };
     
         if (player1.hp === 0 && player1.hp < player2.hp){
-            $arenas.appendChild(player2.playerWin(player2.name));
-            generateLogs('end', player2, player1);
+            Game.$arenas.appendChild(Game.playerWin(player2.name));
+            Game.generateLogs('end', player2, player1);
     
         } else if (player2.hp === 0 && player2.hp < player1.hp){
-            $arenas.appendChild(player1.playerWin(player1.name));
-            generateLogs('end', player1, player2);
+            Game.$arenas.appendChild(Game.playerWin(player1.name));
+            Game.generateLogs('end', player1, player2);
     
         } else if (player1.hp === 0 && player2.hp === 0){
-            $arenas.appendChild(playerWin());
-            generateLogs('draw')
+            Game.$arenas.appendChild(Game.playerWin());
+            Game.generateLogs('draw')
         };
     };
     
-    playerAttack = () => {
+    static playerAttack = () => {
         const attack = {};
-        for (let item of $formFight){
+        for (let item of Game.$formFight){
             if (item.checked && item.name === 'hit'){
                 attack.value = getRandom(HIT[item.value]);
                 attack.hit = item.value;
@@ -96,11 +223,11 @@ export class Game{
             
             item.checked = false;
         }
-    
+
         return attack;
     };
     
-    enemyAttack = () => {
+    static enemyAttack = () => {
         const hit = ATTACK[getRandom(3) - 1];
         const defence = ATTACK[getRandom(3) - 1];
         return{
@@ -109,54 +236,6 @@ export class Game{
             defence,
         }
     };
+
+    
 };
-
-
-export const generateLogs = (type, player1, player2, playerValue) => {
-    const time = getTime();
-    let text;   
-    let el;
-    const damage = playerValue;
-
-    switch(type){
-        case 'start': 
-            text = logs[type].replace('[time]', time).replace('[player1]', player1.name).replace('[player2]', player2.name);    
-            el = `<p>${text}</p>`;
-            break;
-        case 'end':
-            text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerWins]', player1.name).replace('[playerLose]', player2.name);    
-            el = `<p>${time} ${text}</p>`;
-            break;
-        case 'hit':
-            text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerDefence]', player2.name).replace('[playerKick]', player1.name);    
-            el = `<p>${time} ${text} ${damage} ${player2.hp}/100 </p>`;
-            break;
-        case 'defence':
-            text = logs[type][getRandom(logs[type].length - 1) - 1].replace('[playerKick]', player1.name).replace('[playerDefence]', player2.name);    
-            el = `<p>${time} ${text} ${damage} ${player2.hp}/100</p>`;
-            break;
-        case 'draw':
-            text = logs[type];    
-            el = `<p>${time} ${text}</p>`;
-            break;
-        default:
-            text = 'Error';
-            el = `<p>${text}</p>`;
-    };
-    $chat.insertAdjacentHTML('afterbegin', el);
-};
-
-
-
-const createReloadButton = () => {
-    const $reloadWrap = createElement('div', 'reloadWrap')
-    const $buttonReload = createElement('button', 'button');
-    $buttonReload.innerText = 'Restart';
-    $reloadWrap.appendChild($buttonReload);
-    $buttonReload.addEventListener('click', function(){
-        window.location.reload();
-    });
-
-    return $reloadWrap;
-};
-

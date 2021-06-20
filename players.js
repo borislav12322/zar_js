@@ -30,39 +30,7 @@ export class Player{
         return this.elHP().style.width = this.hp + '%';
     };
     
-    playerWin = (name) => {
-        const $winTitle = createElement('div', 'loseTitle');
-        (name) ? $winTitle.innerText = name + ' Wins' : $winTitle.innerText = 'Draw';
-        return $winTitle;
-    };
 };
-
-export const player1 = new Player({
-    number: 1,
-    name: 'Sub-zero',
-    hp: 100,
-    img: 'http://reactmarathon-api.herokuapp.com/assets/subzero.gif',
-    weapon: 'Sword',
-    attack: function () {
-        console.log(player1.hero_name + ' Fight');
-    },
-    rootSelector: 'arenas',
-});
-
-export const {number, name, hp, img, weapon} = player1;
-console.log(number, name, hp, img, weapon);
-
-export const player2 = new Player({
-    number: 2,
-    name: 'Scorpion',
-    hp: 100,
-    img: 'http://reactmarathon-api.herokuapp.com/assets/scorpion.gif',
-    weapon: 'Chain',
-    attack: function () {
-        console.log(player2.hero_name + ' Fight');
-    },
-    rootSelector: 'arenas',
-});
 
 export const createPlayer = ({number, hp, name, img, rootSelector}) => {
     const $player = createElement('div', 'player' + number);
@@ -94,8 +62,4 @@ export const createPlayer = ({number, hp, name, img, rootSelector}) => {
     $root.appendChild($player);
     return $player;
 };
-
-export const {number: player2_number, name: hero2_name, hp: hero2_hp, img: hero2_img, weapon: hero2_weapon, rootSelector: rootSelector2} = player2;
-console.log(player2_number, hero2_name, hero2_hp, hero2_img, hero2_weapon);
-
 
